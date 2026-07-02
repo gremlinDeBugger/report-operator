@@ -1,0 +1,20 @@
+# Secrets & state — NEVER commit
+.env
+data/clients.json
+data/*.json
+clients/
+intake/onboarding/*.json
+intake/onboarding/_archived/
+output/
+client_output/
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+
+# OS
+.DS_Store
+outbox/

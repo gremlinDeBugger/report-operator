@@ -1,0 +1,81 @@
+Order Date,Region,Product,Units,Revenue,Sales Rep
+2026-04-01,Midwest,Summit Pack 40L,4,$716,J. Kessler
+2026-04-01,Southwest,Trail Runner X1,9,"$1,611",R. Okafor
+2026-04-01,Southeast,Summit Pack 40L,4,$156,A. Morgan
+2026-04-01,Southwest,Base Layer Pro,44,"$7,876",J. Kessler
+2026-04-02,Northeast,Summit Pack 40L,40,"$6,360",R. Okafor
+2026-04-03,Southeast,Alpine Jacket,20,"$1,780",A. Morgan
+2026-04-03,Midwest,Alpine Jacket,27,"$1,053",T. Vance
+2026-04-03,Northeast,Base Layer Pro,32,"$7,328",A. Morgan
+2026-04-04,Midwest,Cascade Tent,43,"$9,847",J. Kessler
+2026-04-04,Southeast,Alpine Jacket,5,$895,A. Morgan
+2026-04-04,Midwest,Base Layer Pro,9,$261,T. Vance
+2026-04-04,Southeast,Ridge Boots,26,"$4,134",T. Vance
+2026-04-04,Southeast,Cascade Tent,41,"$7,339",J. Kessler
+2026-04-04,Midwest,Ridge Boots,32,$928,J. Kessler
+2026-04-05,Northeast,Alpine Jacket,6,$534,R. Okafor
+2026-04-06,Southwest,Ridge Boots,7,$623,T. Vance
+2026-04-06,West,Ridge Boots,44,"$1,276",R. Okafor
+2026-04-06,Southeast,Ridge Boots,19,"$1,691",T. Vance
+2026-04-07,Midwest,Summit Pack 40L,40,"$1,160",J. Kessler
+2026-04-08,Northeast,Summit Pack 40L,8,$312,J. Kessler
+2026-04-09,West,Base Layer Pro,41,"$1,599",R. Okafor
+2026-04-10,Northeast,Ridge Boots,38,"$1,482",T. Vance
+2026-04-11,West,Summit Pack 40L,10,"$1,590",R. Okafor
+2026-04-11,Southeast,Cascade Tent,19,"$4,351",A. Morgan
+2026-04-12,Southwest,Summit Pack 40L,43,"$9,847",J. Kessler
+2026-04-13,Southwest,Trail Runner X1,13,"$2,977",T. Vance
+2026-04-14,Midwest,Alpine Jacket,4,$156,J. Kessler
+2026-04-14,Northeast,Trail Runner X1,18,"$4,122",R. Okafor
+2026-04-14,Southeast,Ridge Boots,37,"$3,293",R. Okafor
+2026-04-14,Southwest,Base Layer Pro,19,"$4,351",J. Kessler
+2026-04-14,Midwest,Base Layer Pro,22,$638,R. Okafor
+2026-04-14,Northeast,Alpine Jacket,18,"$1,602",A. Morgan
+2026-04-14,Northeast,Trail Runner X1,40,"$3,560",A. Morgan
+2026-04-14,Midwest,Trail Runner X1,7,$273,J. Kessler
+2026-04-15,Southeast,Cascade Tent,45,"$1,305",J. Kessler
+2026-04-16,West,Summit Pack 40L,18,$522,A. Morgan
+2026-04-16,Midwest,Base Layer Pro,45,"$1,305",R. Okafor
+2026-04-17,Northeast,Trail Runner X1,6,"$1,074",R. Okafor
+2026-04-18,Southeast,Summit Pack 40L,9,$801,R. Okafor
+2026-04-18,Midwest,Base Layer Pro,30,"$2,670",J. Kessler
+2026-04-18,Northeast,Trail Runner X1,31,"$7,099",A. Morgan
+2026-04-18,West,Base Layer Pro,18,"$1,602",R. Okafor
+2026-04-18,Southeast,Base Layer Pro,28,"$1,092",A. Morgan
+2026-04-19,Midwest,Base Layer Pro,19,$551,R. Okafor
+2026-04-19,Southeast,Trail Runner X1,15,"$2,385",A. Morgan
+2026-04-20,Southwest,Base Layer Pro,6,$234,J. Kessler
+2026-04-20,Southeast,Trail Runner X1,35,"$1,365",A. Morgan
+2026-04-20,Southwest,Summit Pack 40L,28,"$1,092",A. Morgan
+2026-04-20,Southwest,Cascade Tent,29,"$5,191",T. Vance
+2026-04-21,Midwest,Summit Pack 40L,16,"$2,864",T. Vance
+2026-04-22,Midwest,Base Layer Pro,11,"$1,969",T. Vance
+2026-04-22,Southwest,Cascade Tent,3,$87,A. Morgan
+2026-04-22,Southwest,Alpine Jacket,37,"$3,293",J. Kessler
+2026-04-23,Midwest,Alpine Jacket,7,$623,J. Kessler
+2026-04-24,Midwest,Cascade Tent,37,"$6,623",A. Morgan
+2026-04-25,Southeast,Alpine Jacket,45,"$1,755",A. Morgan
+2026-04-25,Midwest,Alpine Jacket,38,"$3,382",J. Kessler
+2026-04-26,Midwest,Cascade Tent,16,"$2,864",R. Okafor
+2026-04-27,West,Alpine Jacket,6,$234,A. Morgan
+2026-04-27,Midwest,Summit Pack 40L,24,"$2,136",R. Okafor
+2026-04-28,Northeast,Trail Runner X1,38,"$1,482",J. Kessler
+2026-04-28,Southwest,Summit Pack 40L,26,"$5,954",R. Okafor
+2026-04-28,Midwest,Trail Runner X1,5,$795,T. Vance
+2026-04-28,Northeast,Alpine Jacket,18,"$3,222",R. Okafor
+2026-04-28,Southeast,Base Layer Pro,18,"$1,602",A. Morgan
+2026-04-28,Southeast,Alpine Jacket,24,$696,J. Kessler
+2026-04-28,West,Summit Pack 40L,27,"$1,053",J. Kessler
+2026-04-29,Southeast,Summit Pack 40L,25,"$3,975",A. Morgan
+2026-04-29,Midwest,Trail Runner X1,28,"$4,452",T. Vance
+2026-04-30,West,Ridge Boots,44,"$10,076",T. Vance
+2026-04-30,Southeast,Cascade Tent,10,"$1,590",T. Vance
+2026-04-30,West,Alpine Jacket,9,"$2,061",T. Vance
+2026-05-01,Northeast,Base Layer Pro,41,"$9,389",J. Kessler
+2026-05-02,West,Trail Runner X1,5,$895,J. Kessler
+2026-05-03,Midwest,Cascade Tent,30,"$1,170",T. Vance
+2026-05-03,Midwest,Ridge Boots,22,"$5,038",R. Okafor
+2026-05-04,Midwest,Cascade Tent,28,"$5,012",J. Kessler
+2026-05-04,West,Ridge Boots,29,"$5,191",J. Kessler
+2026-05-05,Northeast,Alpine Jacket,28,"$6,412",T. Vance
+2026-05-05,Southwest,Ridge Boots,30,"$6,870",T. Vance
