@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GremlinHunter Reporting — Quarterly fundamentals, fetched, verified, emailed</title>
+<meta name="description" content="Enter tickers and your data-provider key. Get a fixed-format quarterly fundamentals report by email. Every number is verified against the provider payload before it ships.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0E1F19;        /* green-black — dark sections, primary text        */
+  --paper:#FAFAF7;      /* cool paper                                       */
+  --ledger:#1E5C46;     /* banker's green — links, buttons, pipeline        */
+  --brass:#A8842C;      /* the one accent: VERIFIED stamp, nothing else     */
+  --rule:#D8DED9;       /* hairlines on paper                               */
+  --muted:#5C6B63;      /* secondary text on paper                          */
+  --paper-dim:#C9D2CC;  /* secondary text on ink                            */
+  --display:'Bricolage Grotesque',Georgia,serif;
+  --body:'IBM Plex Sans',system-ui,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:var(--body);background:var(--paper);color:var(--ink);
+     font-size:1.0625rem;line-height:1.65;-webkit-font-smoothing:antialiased}
+a{color:var(--ledger)}
+:focus-visible{outline:3px solid var(--ledger);outline-offset:3px;border-radius:2px}
+img{max-width:100%}
+.wrap{max-width:1120px;margin:0 auto;padding:0 1.25rem}
+.eyebrow{font-family:var(--mono);font-size:.75rem;letter-spacing:.14em;
+         text-transform:uppercase;color:var(--ledger)}
+.dark .eyebrow{color:var(--paper-dim)}
+h1,h2{font-family:var(--display);font-weight:800;letter-spacing:-.02em;line-height:1.06}
+h1{font-size:clamp(2.4rem,6.5vw,4.2rem)}
+h2{font-size:clamp(1.7rem,4vw,2.5rem);margin:.5rem 0 1rem}
+h3{font-family:var(--display);font-weight:700;font-size:1.15rem;letter-spacing:-.01em}
+
+/* ---------- header ---------- */
+header{border-bottom:1px solid var(--rule);background:var(--paper);
+       position:sticky;top:0;z-index:20}
+.nav{display:flex;align-items:center;justify-content:space-between;
+     padding:.9rem 1.25rem;max-width:1120px;margin:0 auto}
+.logo{font-family:var(--mono);font-weight:500;font-size:.95rem;color:var(--ink);
+      text-decoration:none}
+.logo b{color:var(--ledger)}
+.nav-links{display:flex;gap:1.5rem;align-items:center}
+.nav-links a{font-size:.9rem;text-decoration:none;color:var(--ink)}
+.nav-links a:hover{color:var(--ledger)}
+.nav-links a.cta{background:var(--ledger);color:#fff;padding:.5rem 1rem;
+                 border-radius:3px;font-weight:600}
+@media(max-width:640px){.nav-links a:not(.cta){display:none}}
+
+/* ---------- hero ---------- */
+.hero{padding:4.5rem 0 4rem}
+.hero .wrap{display:grid;grid-template-columns:1.1fr .9fr;gap:3.5rem;align-items:center}
+@media(max-width:880px){.hero .wrap{grid-template-columns:1fr;gap:2.5rem}}
+.hero p.lede{margin:1.25rem 0 2rem;font-size:1.15rem;color:var(--muted);max-width:34rem}
+.btn{display:inline-block;font-family:var(--body);font-weight:600;font-size:1rem;
+     padding:.85rem 1.5rem;border-radius:3px;border:1.5px solid var(--ledger);
+     cursor:pointer;text-decoration:none;transition:transform .12s ease}
+.btn:hover{transform:translateY(-1px)}
+.btn-solid{background:var(--ledger);color:#fff}
+.btn-ghost{background:transparent;color:var(--ledger);margin-left:.75rem}
+
+/* the signature: a report that prints itself */
+.ticket{background:#fff;border:1px solid var(--rule);border-radius:4px;
+        padding:1.5rem 1.5rem 1.25rem;font-family:var(--mono);font-size:.8rem;
+        box-shadow:0 1px 0 var(--rule);position:relative;max-width:26rem;
+        margin-left:auto}
+@media(max-width:880px){.ticket{margin-left:0}}
+.ticket .t-head{font-size:.68rem;letter-spacing:.16em;color:var(--muted);
+                border-bottom:1px solid var(--rule);padding-bottom:.6rem;
+                margin-bottom:.8rem;display:flex;justify-content:space-between}
+.t-row{display:flex;justify-content:space-between;padding:.32rem 0;
+       border-bottom:1px dotted var(--rule);opacity:0;transform:translateY(4px)}
+.t-row.on{opacity:1;transform:none;transition:opacity .3s ease,transform .3s ease}
+.t-row span:last-child{font-weight:500}
+.t-row .up{color:var(--ledger)}
+.stamp{position:absolute;right:1.1rem;bottom:2.6rem;font-family:var(--mono);
+       font-size:.72rem;letter-spacing:.2em;color:var(--brass);
+       border:2px solid var(--brass);padding:.3rem .7rem;border-radius:2px;
+       transform:rotate(-8deg) scale(1.6);opacity:0}
+.stamp.on{opacity:1;transform:rotate(-8deg) scale(1);
+          transition:opacity .25s ease,transform .25s cubic-bezier(.2,1.4,.4,1)}
+.t-foot{margin-top:.9rem;font-size:.65rem;color:var(--muted)}
+
+/* ---------- pipeline (dark band) ---------- */
+.dark{background:var(--ink);color:var(--paper)}
+.pipeline{padding:4.5rem 0}
+.pipeline h2{color:var(--paper)}
+.stages{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;
+        background:#22382F;border:1px solid #22382F;margin-top:2.25rem}
+@media(max-width:880px){.stages{grid-template-columns:1fr 1fr}}
+@media(max-width:520px){.stages{grid-template-columns:1fr}}
+.stage{background:var(--ink);padding:1.6rem 1.4rem}
+.stage .num{font-family:var(--mono);font-size:.72rem;color:var(--paper-dim);
+            letter-spacing:.14em}
+.stage h3{color:var(--paper);margin:.5rem 0 .4rem}
+.stage p{font-size:.92rem;color:var(--paper-dim);line-height:1.55}
+.pipeline .note{margin-top:1.75rem;font-size:.95rem;color:var(--paper-dim);max-width:46rem}
+.pipeline .note b{color:var(--paper)}
+
+/* ---------- sample ---------- */
+.sample{padding:4.5rem 0;border-bottom:1px solid var(--rule)}
+.sample .cols{display:grid;grid-template-columns:.9fr 1.1fr;gap:3rem;align-items:start;margin-top:1rem}
+@media(max-width:880px){.sample .cols{grid-template-columns:1fr}}
+.sample p{color:var(--muted);max-width:32rem;margin-bottom:1.5rem}
+table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:.82rem}
+caption{text-align:left;font-family:var(--mono);font-size:.7rem;letter-spacing:.14em;
+        text-transform:uppercase;color:var(--muted);padding-bottom:.6rem}
+th{text-align:right;font-weight:500;color:var(--muted);font-size:.7rem;
+   letter-spacing:.1em;text-transform:uppercase;border-bottom:1px solid var(--ink);
+   padding:.45rem .5rem}
+th:first-child,td:first-child{text-align:left;padding-left:0}
+td{text-align:right;padding:.5rem .5rem;border-bottom:1px solid var(--rule)}
+td .up{color:var(--ledger)}
+
+/* ---------- run form (dark) ---------- */
+.run{padding:4.5rem 0 5rem}
+.run h2{color:var(--paper)}
+.run .grid{display:grid;grid-template-columns:1fr 1fr;gap:3rem;margin-top:1.5rem}
+@media(max-width:880px){.run .grid{grid-template-columns:1fr}}
+.run .about p{color:var(--paper-dim);font-size:.95rem;margin-bottom:1.1rem}
+.run .about b{color:var(--paper)}
+.keynote{border-left:3px solid var(--brass);padding:.75rem 1rem;background:#14291F;
+         font-size:.9rem;color:var(--paper-dim)}
+.keynote b{color:var(--paper)}
+form{background:#14291F;border:1px solid #22382F;border-radius:4px;padding:1.75rem}
+label{display:block;font-family:var(--mono);font-size:.72rem;letter-spacing:.12em;
+      text-transform:uppercase;color:var(--paper-dim);margin:1.1rem 0 .35rem}
+label:first-child{margin-top:0}
+input,select{width:100%;padding:.7rem .8rem;font-family:var(--body);font-size:1rem;
+             background:var(--ink);border:1px solid #2E4A3C;border-radius:3px;
+             color:var(--paper)}
+input::placeholder{color:#4E6156}
+.form-actions{margin-top:1.6rem;display:flex;gap:.75rem;flex-wrap:wrap}
+button{font-family:var(--body)}
+.btn-demo{background:transparent;color:var(--paper);border-color:#2E4A3C}
+#status{margin-top:1.25rem;font-family:var(--mono);font-size:.82rem;min-height:1.4rem;
+        color:var(--paper-dim);white-space:pre-line}
+#status.err{color:#E0A9A0}
+#status.ok{color:#9CCBB5}
+.hint{font-size:.78rem;color:#4E6156;font-family:var(--body);margin-top:.3rem}
+
+/* ---------- footer ---------- */
+footer{padding:2.5rem 0;border-top:1px solid var(--rule)}
+footer .wrap{display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;
+             font-size:.85rem;color:var(--muted)}
+footer a{color:var(--ledger)}
+
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .t-row,.stamp{opacity:1;transform:rotate(-8deg);transition:none}
+  .t-row{transform:none}
+  .btn:hover{transform:none}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <nav class="nav" aria-label="Main">
+    <a class="logo" href="#"><b>GremlinHunter</b> Reporting</a>
+    <div class="nav-links">
+      <a href="#pipeline">How it works</a>
+      <a href="#sample">Sample report</a>
+      <a href="https://github.com/gremlinDeBugger/report-operator">Source</a>
+      <a class="cta" href="#run">Run a report</a>
+    </div>
+  </nav>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <div>
+      <p class="eyebrow">Quarterly fundamentals · PDF · by email</p>
+      <h1>Reports where every number has to prove itself.</h1>
+      <p class="lede">Enter tickers and your data-provider key. Eight quarters of
+      revenue, net income, margin, and EPS come back as a fixed-format PDF —
+      each figure checked against the provider payload before the report is
+      allowed to ship.</p>
+      <a class="btn btn-solid" href="#run">Run a report</a>
+      <a class="btn btn-ghost" href="sample-report.pdf">See a real one</a>
+    </div>
+    <div class="ticket" id="ticket" aria-label="Sample report preview">
+      <div class="t-head"><span>QUARTERLY FUNDAMENTALS</span><span>AAPL</span></div>
+      <div class="t-row"><span>Revenue</span><span>$111.18B</span></div>
+      <div class="t-row"><span>Net income</span><span>$29.58B</span></div>
+      <div class="t-row"><span>Net margin</span><span>26.6%</span></div>
+      <div class="t-row"><span>EPS</span><span>2.01</span></div>
+      <div class="t-row"><span>Revenue YoY</span><span class="up">+16.6%</span></div>
+      <div class="t-row"><span>EPS YoY</span><span class="up">+21.8%</span></div>
+      <span class="stamp" id="stamp">VERIFIED</span>
+      <div class="t-foot">Period ending 2026-03-31 · source: provider filing data</div>
+    </div>
+  </div>
+</section>
+
+<section class="dark pipeline" id="pipeline">
+  <div class="wrap">
+    <p class="eyebrow">The pipeline</p>
+    <h2>Four gates between a ticker and your inbox.</h2>
+    <div class="stages">
+      <div class="stage">
+        <span class="num">01 — FETCH</span>
+        <h3>Pull the quarters</h3>
+        <p>Your key pulls eight quarters of income-statement data from
+        Financial Modeling Prep or Alpha Vantage — your account, your data.</p>
+      </div>
+      <div class="stage">
+        <span class="num">02 — VERIFY</span>
+        <h3>Check every figure</h3>
+        <p>A verification gate recomputes each number in the write-up against
+        the provider payload. Anything it can't confirm is discarded, not
+        printed.</p>
+      </div>
+      <div class="stage">
+        <span class="num">03 — RENDER</span>
+        <h3>Fix the format</h3>
+        <p>The report renders to one fixed template — same layout, same order,
+        every quarter. Comparable across companies and across time.</p>
+      </div>
+      <div class="stage">
+        <span class="num">04 — DELIVER</span>
+        <h3>Email the PDF</h3>
+        <p>The finished report lands in your inbox as an attachment, branded
+        with your firm's name. Or download it straight from this page.</p>
+      </div>
+    </div>
+    <p class="note"><b>Why a gate?</b> AI-written summaries invent plausible
+    numbers. This pipeline treats that as a defect, not a style choice: the
+    write-up may only state figures the verifier can trace to the source data.
+    Duller sentences, correct numbers.</p>
+  </div>
+</section>
+
+<section class="sample" id="sample">
+  <div class="wrap">
+    <p class="eyebrow">Sample output</p>
+    <h2>A real run, not a mock-up.</h2>
+    <div class="cols">
+      <div>
+        <p>This report was generated by the pipeline and emailed the same
+        day — Apple and Microsoft, eight quarters each, from live provider
+        data. The PDF you download is the actual delivered file.</p>
+        <a class="btn btn-solid" href="sample-report.pdf" download>Download the sample PDF</a>
+      </div>
+      <table>
+        <caption>From the sample — MSFT, period ending 2026-03-31</caption>
+        <thead><tr><th scope="col">Metric</th><th scope="col">Value</th><th scope="col">YoY</th></tr></thead>
+        <tbody>
+          <tr><td>Revenue</td><td>$82.89B</td><td><span class="up">+18.3%</span></td></tr>
+          <tr><td>Net income</td><td>$31.78B</td><td>—</td></tr>
+          <tr><td>Net margin</td><td>38.3%</td><td>—</td></tr>
+          <tr><td>EPS</td><td>4.27</td><td><span class="up">+23.4%</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="dark run" id="run">
+  <div class="wrap">
+    <p class="eyebrow">Run a report</p>
+    <h2>Your tickers, your key, your inbox.</h2>
+    <div class="grid">
+      <div class="about">
+        <p><b>Bring your own key.</b> Reports pull from your account at
+        <a href="https://site.financialmodelingprep.com/">Financial Modeling Prep</a>
+        or <a href="https://www.alphavantage.co/">Alpha Vantage</a> — both offer
+        free keys that cover this report.</p>
+        <p class="keynote"><b>How your key is handled:</b> it travels once over
+        HTTPS, is used for this single fetch, and goes out of scope when the
+        run ends. It is never logged, never written to disk, never stored.
+        There is no account system here — nothing to breach.
+        <a href="https://github.com/gremlinDeBugger/report-operator">Read the source.</a></p>
+        <p>No key yet? <b>Run it on sample data</b> — same pipeline, same
+        gates, bundled fixture companies instead of live tickers.</p>
+      </div>
+      <form id="genform">
+        <label for="provider">Data provider</label>
+        <select id="provider">
+          <option value="fmp">Financial Modeling Prep</option>
+          <option value="alphavantage">Alpha Vantage</option>
+        </select>
+        <label for="apikey">Your API key</label>
+        <input id="apikey" type="password" autocomplete="off" placeholder="Used once, never stored">
+        <label for="tickers">Tickers</label>
+        <input id="tickers" type="text" placeholder="AAPL, MSFT" autocomplete="off">
+        <p class="hint">Up to 4, comma-separated.</p>
+        <label for="email">Email the PDF to (optional)</label>
+        <input id="email" type="email" placeholder="you@firm.com" autocomplete="email">
+        <label for="brand">Prepared for (optional)</label>
+        <input id="brand" type="text" placeholder="Your firm's name">
+        <div class="form-actions">
+          <button class="btn btn-solid" type="submit">Generate report</button>
+          <button class="btn btn-demo" type="button" id="demobtn">Run on sample data</button>
+        </div>
+        <p id="status" role="status"></p>
+      </form>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>GremlinHunter Reporting — built and run by Jared Jowett.</span>
+    <span><a href="https://github.com/gremlinDeBugger/report-operator">GitHub</a> ·
+    <a href="https://www.upwork.com/freelancers/gremlinhunter">Hire on Upwork</a></span>
+  </div>
+</footer>
+
+<script>
+// Point this at the deployed service. Localhost default makes local testing work.
+const API_BASE = window.API_BASE || "http://localhost:8000";
+
+// hero: the report prints itself once, on load
+(function(){
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const rows = document.querySelectorAll("#ticket .t-row");
+  const stamp = document.getElementById("stamp");
+  if (reduce){ rows.forEach(r=>r.classList.add("on")); stamp.classList.add("on"); return; }
+  rows.forEach((r,i)=>setTimeout(()=>r.classList.add("on"), 350 + i*220));
+  setTimeout(()=>stamp.classList.add("on"), 350 + rows.length*220 + 250);
+})();
+
+const form = document.getElementById("genform");
+const status = document.getElementById("status");
+const submitBtn = form.querySelector('button[type="submit"]');
+const demoBtn = document.getElementById("demobtn");
+const STAGES = ["FETCH","VERIFY","RENDER","DELIVER"];
+let ticking = null;
+let running = false;
+
+function showRunning(){
+  let i = 0;
+  status.className = "";
+  status.textContent = "RUNNING · " + STAGES[0] + " …";
+  ticking = setInterval(()=>{ i = Math.min(i+1, STAGES.length-1);
+    status.textContent = "RUNNING · " + STAGES[i] + " …"; }, 2500);
+}
+function stopRunning(){ clearInterval(ticking); ticking = null; }
+
+async function generate(payload){
+  if (running) return;
+  running = true;
+  submitBtn.disabled = true;
+  demoBtn.disabled = true;
+  showRunning();
+  try{
+    const res = await fetch(API_BASE + "/api/generate", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify(payload)});
+    const j = await res.json();
+    if (!res.ok){
+      status.className = "err";
+      status.textContent = "FAILED · " + (j.detail?.[0]?.msg || j.detail || res.statusText);
+      return;
+    }
+    const bytes = Uint8Array.from(atob(j.report_b64), c=>c.charCodeAt(0));
+    const url = URL.createObjectURL(new Blob([bytes], {type:j.content_type}));
+    const a = document.createElement("a");
+    a.href = url; a.download = j.filename; a.click();
+    URL.revokeObjectURL(url);
+    status.className = "ok";
+    status.textContent = "DONE · report downloaded" +
+      (j.emailed ? " and emailed" :
+       (payload.email && !j.email_configured ? "\n(email delivery isn't switched on for this demo yet)" : ""));
+  }catch(e){
+    status.className = "err";
+    status.textContent = "FAILED · couldn't reach the report service. " +
+      "Free-tier hosting sleeps when idle — wait ~30s and try again.";
+  }finally{
+    stopRunning();
+    running = false;
+    submitBtn.disabled = false;
+    demoBtn.disabled = false;
+  }
+}
+
+form.addEventListener("submit", (e)=>{
+  e.preventDefault();
+  const tickers = document.getElementById("tickers").value
+    .split(",").map(t=>t.trim()).filter(Boolean);
+  if (!document.getElementById("apikey").value.trim()){
+    status.className="err";
+    status.textContent="FAILED · live data needs your API key — or run on sample data instead.";
+    return;
+  }
+  if (!tickers.length){
+    status.className="err";
+    status.textContent="FAILED · enter at least one ticker.";
+    return;
+  }
+  generate({provider: document.getElementById("provider").value,
+            api_key: document.getElementById("apikey").value.trim(),
+            tickers,
+            email: document.getElementById("email").value.trim(),
+            brand: document.getElementById("brand").value.trim()});
+});
+
+demoBtn.addEventListener("click", ()=>{
+  generate({provider:"demo",
+            email: document.getElementById("email").value.trim(),
+            brand: document.getElementById("brand").value.trim() || "Sample Client"});
+});
+</script>
+</body>
+</html>
