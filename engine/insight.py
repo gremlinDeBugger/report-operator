@@ -352,9 +352,29 @@ def generate_financial_insight(payload: dict, *, ai_opted_in: bool = False,
         # percentages, so every % claim must exist there verbatim.
         v = verify_text(text, payload, allow_shares=False)
         if not v.ok:
-            log.warning("financial insight discarded (%s) — deterministic "
-                        "summary shipped instead", v.why())
-            return deterministic_financial_summary(payload)
+            # one corrective pass: hand the model its own rejected numbers
+            log.info("verification failed (%s) — one corrective retry", v.why())
+            bad = ", ".join(raw for raw, _ in v.unmatched)
+            retry = c.messages.create(
+                model=MODEL, max_tokens=450, system=_FINANCIAL_SYSTEM,
+                messages=[
+                    {"role": "user", "content": json.dumps(payload)},
+                    {"role": "assistant", "content": text},
+                    {"role": "user", "content":
+                        f"Verification rejected these numbers as not present in "
+                        f"the JSON: {bad}. Rewrite your analysis using ONLY "
+                        f"numbers that appear verbatim as JSON values. Do not "
+                        f"compute or derive anything."},
+                ],
+            )
+            text = "".join(b.text for b in retry.content
+                           if getattr(b, "type", "") == "text").strip()
+            v = verify_text(text, payload, allow_shares=False)
+            if not text or not v.ok:
+                log.warning("financial insight discarded after retry (%s) — "
+                            "deterministic summary shipped instead", v.why())
+                return deterministic_financial_summary(payload)
+            _bump_usage(client_id)   # count the retry
         _bump_usage(client_id)
         return text
     except Exception as e:

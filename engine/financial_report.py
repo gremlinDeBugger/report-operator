@@ -59,6 +59,7 @@ class Quarter:
     eps: float | None
     net_margin_pct: float | None
     gross_margin_pct: float | None = None
+    operating_margin_pct: float | None = None
     operating_income: float | None = None
 
 
@@ -115,6 +116,7 @@ def load_fundamentals(rows: list[dict]) -> list[Company]:
                       eps=try_number(r.get("eps")),
                       net_margin_pct=try_number(r.get("net_margin_pct")),
                       gross_margin_pct=try_number(r.get("gross_margin_pct")),
+                      operating_margin_pct=try_number(r.get("operating_margin_pct")),
                       operating_income=try_number(r.get("operating_income")))
               for r in rs]
         qs = [q for q in qs if q.revenue is not None]
@@ -146,6 +148,12 @@ def financial_metrics_payload(companies: list[Company],
             "revenue_yoy_pct": c.revenue_yoy_pct,
             "eps_yoy_pct": c.eps_yoy_pct,
             "revenue_series": [q.revenue for q in c.quarters],
+            "quarters": [{"fiscal_date": q.fiscal_date, "period": q.period,
+                          "revenue": q.revenue, "net_income": q.net_income,
+                          "eps": q.eps, "net_margin_pct": q.net_margin_pct,
+                          "gross_margin_pct": q.gross_margin_pct,
+                          "operating_margin_pct": q.operating_margin_pct}
+                         for q in c.quarters],
         })
     if market_context:
         out["market_context"] = market_context

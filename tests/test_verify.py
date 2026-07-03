@@ -65,3 +65,13 @@ def test_strict_mode_blocks_coincidental_percent():
                      payload, allow_shares=False)
     bad = verify_text("Revenue soared 87% YoY.", payload, allow_shares=False)
     assert ok.ok and not bad.ok
+
+
+def test_spelled_out_scale_words():
+    """'$111.2 billion' must scale like '$111.2B' — caught live in full send."""
+    payload = {"latest": {"revenue": 111_200_000_000, "net_income": 29_600_000_000}}
+    v = verify_text("Revenue reached $111.2 billion with $29.6 billion net income.",
+                    payload, allow_shares=False)
+    assert v.ok, v.why()
+    bad = verify_text("Revenue reached $999.9 billion.", payload, allow_shares=False)
+    assert not bad.ok

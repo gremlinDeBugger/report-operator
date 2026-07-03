@@ -45,10 +45,13 @@ _NUM_RE = re.compile(r"""
 """, re.VERBOSE)
 
 _SUFFIX_MULT = {"k": 1_000, "m": 1_000_000, "b": 1_000_000_000}
+_WORD_MULT = {"thousand": 1_000, "million": 1_000_000,
+              "billion": 1_000_000_000, "trillion": 1_000_000_000_000}
+_WORD_RE = re.compile(r"^\s*(thousand|million|billion|trillion)\b", re.IGNORECASE)
 
 # "Q3", "FY2025", "2024-06-30", "7-day" — patterns whose digits are not claims
 _DATEY_RE = re.compile(r"""(?:\bQ[1-4]\b|\bFY\s?\d{2,4}\b|\b\d{4}-\d{2}(?:-\d{2})?\b
-                            |\b\d{1,2}/\d{1,2}(?:/\d{2,4})?\b|\b\d+-(?:day|week|month|year)\b)""",
+                            |\b\d{1,2}/\d{1,2}(?:/\d{2,4})?\b|\b\d+-(?:day|week|month|year)\b|'\d{2}\b|\bQ[1-4]\s?'?\d{2}\b|\bFY\s?'?\d{2}\b)""",
                        re.VERBOSE | re.IGNORECASE)
 
 
@@ -77,6 +80,11 @@ def extract_claims(text: str) -> list[tuple[str, float]]:
         suffix = (m.group("suffix") or "").lower()
         if suffix in _SUFFIX_MULT:
             val *= _SUFFIX_MULT[suffix]
+        elif not suffix:
+            wm = _WORD_RE.match(scrubbed[m.end():])
+            if wm:
+                val *= _WORD_MULT[wm.group(1).lower()]
+                suffix = wm.group(1).lower()   # treat as scaled, not a bare int
         # years read as plain numbers are not data claims
         if 1990 <= val <= 2039 and val == int(val) and not m.group("currency") \
                 and suffix in ("", None):
