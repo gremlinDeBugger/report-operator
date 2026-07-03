@@ -42,7 +42,7 @@ import urllib.parse
 
 log = logging.getLogger("connector.fundamentals")
 
-DEFAULT_BASE = "https://financialmodelingprep.com/api/v3"
+DEFAULT_BASE = "https://financialmodelingprep.com/stable"
 FIELDNAMES = ["ticker", "fiscal_date", "period", "calendar_year",
               "revenue", "gross_profit", "operating_income", "net_income", "eps",
               "gross_margin_pct", "operating_margin_pct", "net_margin_pct"]
@@ -70,7 +70,7 @@ def normalize_statement(ticker: str, stmt: dict) -> dict:
         "ticker": ticker.upper(),
         "fiscal_date": stmt.get("date", ""),
         "period": stmt.get("period", ""),
-        "calendar_year": stmt.get("calendarYear", ""),
+        "calendar_year": stmt.get("calendarYear") or stmt.get("fiscalYear", ""),
         "revenue": revenue,
         "gross_profit": stmt.get("grossProfit"),
         "operating_income": stmt.get("operatingIncome"),
@@ -113,8 +113,8 @@ def fetch_quarterly_fundamentals(api_key: str, report_config: dict,
 
     rows: list[dict] = []
     for t in tickers:
-        url = (f"{base}/income-statement/{urllib.parse.quote(t)}"
-               f"?period=quarter&limit={quarters}&apikey={urllib.parse.quote(api_key)}")
+        url = (f"{base}/income-statement?symbol={urllib.parse.quote(t)}"
+               f"&period=quarter&limit={quarters}&apikey={urllib.parse.quote(api_key)}")
         try:
             req = urllib.request.Request(url, headers={"User-Agent": "report-operator/1.0"})
             with urllib.request.urlopen(req, timeout=30) as resp:

@@ -31,6 +31,8 @@ TINY_PNG = base64.b64decode(
 def env(tmp_path, monkeypatch):
     # fresh master key + fresh store/paths per test
     monkeypatch.setenv("OPERATOR_MASTER_KEY", registry_mod.generate_master_key())
+    for _smtp in ("SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASS", "SMTP_FROM"):
+        monkeypatch.delenv(_smtp, raising=False)
     store = tmp_path / "clients.json"
     monkeypatch.setattr(registry_mod, "DEFAULT_STORE", str(store))
     monkeypatch.setattr(intake_mod, "ONBOARD_DIR", str(tmp_path / "intake" / "onboarding"))

@@ -217,8 +217,10 @@ def run_client(registry, client_id: str, out_root: str = "client_output",
 
     log.info("[keyed] building report for client '%s' (%s)", client_id, client.brand)
     rc = client.report_config or {}
+    declared = rc.get("report_type") or getattr(client, "report_type", "auto") or "auto"
     result = _build(csv_path, client.brand, out_dir, client_id=client_id,
-                    report_type=rc.get("report_type", "auto"),
+                    ai_opted_in=client.ai_insight,
+                    report_type=declared,
                     market_context=rc.get("market_context"))
     if result.ok:
         registry.mark_run(client_id)
