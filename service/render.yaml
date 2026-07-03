@@ -1,0 +1,16 @@
+# Render blueprint — free tier. Push repo, point Render at it, done.
+# Note: free instances sleep after idle; first request wakes them (~30s).
+services:
+  - type: web
+    name: gremlinhunter-reporting
+    runtime: docker
+    dockerfilePath: ./service/Dockerfile
+    dockerContext: .
+    plan: free
+    envVars:
+      - key: ALLOWED_ORIGINS
+        value: https://gremlindebugger.github.io
+      - key: RATE_LIMIT_PER_HOUR
+        value: "6"
+      # Set SMTP_HOST/PORT/USER/PASS/FROM in the Render dashboard (secrets),
+      # not in this file. Until set, reports return as downloads only.
