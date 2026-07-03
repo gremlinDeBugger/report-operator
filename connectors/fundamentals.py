@@ -158,3 +158,67 @@ def fixture_fetch_fn(api_key: str, report_config: dict, dest_csv: str) -> None:
     if not rows:
         raise RuntimeError(f"fixture has no data for: {', '.join(sorted(wanted))}")
     _write_rows(rows, dest_csv)
+
+
+# --------------------------------------------------------------------------- #
+# Alpha Vantage — second provider, same contract (free tier includes quarterly)
+# --------------------------------------------------------------------------- #
+AV_BASE = "https://www.alphavantage.co/query"
+
+def _av_num(v):
+    try:
+        return None if v in (None, "None", "") else float(v)
+    except (TypeError, ValueError):
+        return None
+
+def _av_get(url):
+    req = urllib.request.Request(url, headers={"User-Agent": "report-operator/1.0"})
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+def fetch_quarterly_fundamentals_av(api_key: str, report_config: dict,
+                                    dest_csv: str) -> None:
+    """fetch_fn for Alpha Vantage. Quarterly income statements + EPS from the
+    earnings endpoint, merged by fiscal date, normalized to the same CSV
+    contract as the FMP connector. Free tier: ~25 requests/day (2 per ticker)."""
+    cfg = report_config or {}
+    tickers = [t.strip().upper() for t in cfg.get("tickers", []) if t.strip()]
+    if not tickers:
+        raise ValueError("report_config.tickers is empty — nothing to fetch")
+    quarters = max(1, min(int(cfg.get("quarters", 8)), 40))
+
+    rows = []
+    for t in tickers:
+        try:
+            inc = _av_get(f"{AV_BASE}?function=INCOME_STATEMENT&symbol={urllib.parse.quote(t)}&apikey={urllib.parse.quote(api_key)}")
+            earn = _av_get(f"{AV_BASE}?function=EARNINGS&symbol={urllib.parse.quote(t)}&apikey={urllib.parse.quote(api_key)}")
+        except Exception as e:
+            log.warning("fetch failed for %s: %s", t, e)
+            continue
+        note = inc.get("Note") or inc.get("Information") or inc.get("Error Message")
+        if note:
+            raise RuntimeError(f"provider said: {note}")
+        eps_by_date = {q.get("fiscalDateEnding"): _av_num(q.get("reportedEPS"))
+                       for q in (earn.get("quarterlyEarnings") or [])}
+        for stmt in (inc.get("quarterlyReports") or [])[:quarters]:
+            d = stmt.get("fiscalDateEnding", "")
+            revenue = _av_num(stmt.get("totalRevenue"))
+            gp = _av_num(stmt.get("grossProfit"))
+            oi = _av_num(stmt.get("operatingIncome"))
+            ni = _av_num(stmt.get("netIncome"))
+            qtr = {3: "Q1", 6: "Q2", 9: "Q3", 12: "Q4"}.get(
+                int(d[5:7]) if len(d) >= 7 else 0, "")
+            rows.append({
+                "ticker": t, "fiscal_date": d, "period": qtr,
+                "calendar_year": d[:4],
+                "revenue": revenue, "gross_profit": gp,
+                "operating_income": oi, "net_income": ni,
+                "eps": eps_by_date.get(d),
+                "gross_margin_pct": _pct(gp, revenue),
+                "operating_margin_pct": _pct(oi, revenue),
+                "net_margin_pct": _pct(ni, revenue),
+            })
+    if not rows:
+        raise RuntimeError(f"no fundamentals returned for any of: {', '.join(tickers)}")
+    _write_rows(rows, dest_csv)
+    log.info("landed %d company-quarters from Alpha Vantage -> %s", len(rows), dest_csv)
