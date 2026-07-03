@@ -28,9 +28,9 @@ from dataclasses import dataclass
 log = logging.getLogger("router")
 
 # types that currently have their own specialized template
-SPECIALIZED = {"meta"}
+SPECIALIZED = {"meta", "financial"}
 # declared types we accept (specialized ones render sharp; the rest -> generic for now)
-KNOWN_TYPES = {"auto", "generic", "meta", "sales", "catalog", "survey"}
+KNOWN_TYPES = {"auto", "generic", "meta", "financial", "sales", "catalog", "survey"}
 
 
 @dataclass
@@ -53,6 +53,15 @@ def looks_like_meta(headers: list[str]) -> bool:
         return False
 
 
+def looks_like_financial(headers: list[str]) -> bool:
+    """True when the CSV carries the connector's company-quarter contract."""
+    try:
+        from engine.financial_report import looks_like_fundamentals
+        return looks_like_fundamentals(headers)
+    except Exception:
+        return False
+
+
 def decide(report_type: str, headers: list[str]) -> tuple[str, str]:
     """
     Return (rendered_as, note). rendered_as is 'meta' or 'generic' (the only two
@@ -68,11 +77,19 @@ def decide(report_type: str, headers: list[str]) -> tuple[str, str]:
         return "generic", ("declared 'meta' but required ad columns "
                            "(campaign/impressions/spend) weren't found — "
                            "rendered as generic instead")
+    if rt == "financial":
+        if looks_like_financial(headers):
+            return "financial", "declared 'financial'; fundamentals columns confirmed"
+        return "generic", ("declared 'financial' but fundamentals columns "
+                           "(ticker/fiscal_date/revenue) weren't found — "
+                           "rendered as generic instead")
     if rt == "generic":
         return "generic", "declared 'generic'"
     if rt == "auto":
         if looks_like_meta(headers):
             return "meta", "auto-detected Meta ad data"
+        if looks_like_financial(headers):
+            return "financial", "auto-detected quarterly fundamentals data"
         return "generic", "auto: no specialized type matched — generic report"
 
     # a declared specialized type that has no template yet (sales/catalog/survey)
@@ -107,6 +124,12 @@ def render(csv_path: str, out_dir: str, *, report_type: str = "auto",
         report = load_report(csv_path)
         b = branding or Branding(brand=brand)
         write_html(report, html_path, branding=b, insight_text=insight_text)
+    elif rendered_as == "financial":
+        from engine.financial_report import write_financial_html
+        from engine.report import Branding
+        b = branding or Branding(brand=brand)
+        write_financial_html(rows, html_path, brand=brand, branding=b,
+                             insight_text=insight_text)
     else:
         from engine.profile import profile_data
         from engine.generic_report import write_generic_html

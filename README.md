@@ -28,7 +28,9 @@ system honors it rather than guessing:
 report_type        renders as
 -----------        ----------
 "meta"             sharp Meta Ads template (if ad columns confirmed; else generic)
-"auto"             sniffs the data: Meta ad data -> Meta template, else -> generic
+"financial"        fixed-format quarterly fundamentals report (verified AI analysis)
+"auto"             sniffs the data: Meta -> Meta template, fundamentals ->
+                   financial template, else -> generic
 "generic"          generic profiler-driven report
 "sales"/"catalog"/ generic report today; auto-upgrades to a specialized template
 "survey"           the day one is built — no rebuild, just declare it
@@ -130,6 +132,9 @@ silently skipped.
 ```
 report-operator/
 ├── engine/          # the report engine (analytics + branded HTML/PDF). Shared by both lanes.
+│   ├── financial_report.py  # fixed-format quarterly fundamentals template
+│   └── verify.py    # the QC gate: AI text checked against source figures
+├── connectors/      # live fetch_fn implementations (financial fundamentals + fixture)
 ├── registry.py      # encrypted client store (Fernet). The ONLY home of secrets.
 ├── runner.py        # run_csv() [basic lane]  |  run_client() [keyed lane]
 ├── scheduler.py     # catch-up-aware; iterates the registry ONLY
@@ -139,16 +144,32 @@ report-operator/
 └── tests/           # proves the isolation + intake guarantees
 ```
 
-## The live Meta connector (off-ramp, not yet bolted on)
+## Live connectors (`connectors/`)
 `runner.run_client()` takes a `fetch_fn(api_key, report_config, dest_csv)` — the
-one seam where a live Meta Marketing API pull plugs in. Until then, clients bring
-their own CSV via the inbox, which works today. When you add the connector, copy
-this repo's own secret-handling pattern; nothing else changes.
+one seam where a live API pull plugs in. The first connector is live:
 
-## License
+**`connectors/fundamentals.py`** pulls quarterly income statements for a ticker
+list from a financial-data API and lands them as one normalized company-quarter
+CSV. Plug it straight in:
 
-© 2026 Jared Jowett. All rights reserved.
+```python
+from connectors.fundamentals import fetch_quarterly_fundamentals
+run_client(registry, "helvetia", fetch_fn=fetch_quarterly_fundamentals)
+# report_config: {"tickers": ["AAPL","MSFT"], "quarters": 8,
+#                 "report_type": "financial",
+#                 "market_context": "rate cuts priced for H2"}
+```
 
-This repository is shared publicly for portfolio and demonstration purposes only.
-No license is granted to use, copy, modify, or distribute this software or its
-source, in whole or in part, without express written permission from the author.
+An offline `fixture_fetch_fn` serves the identical contract from bundled sample
+data — demos and tests run with zero network. A Meta Marketing API connector
+lands the same way: same seam, same secret-handling pattern, nothing else changes.
+
+## The verification gate (`engine/verify.py`)
+Every AI-written insight is generated from a metrics payload computed
+deterministically from the source data — and then checked BACK against it.
+Each numeric claim in the text is extracted and matched to the payload (with
+tolerance for the rounding the model is told it may do). One unverifiable
+number and the AI text is discarded; the deterministic summary — grounded by
+construction — ships instead. **A report can never reach a client carrying a
+number that isn't in the data.** The financial lane runs the gate in strict
+mode: every percentage must exist in the payload itself.

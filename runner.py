@@ -52,23 +52,48 @@ def _safe_name(s: str) -> str:
 
 
 def _build(csv_path: str, brand: str, out_dir: str, client_id: str | None,
-           ai_opted_in: bool = False) -> RunResult:
+           ai_opted_in: bool = False, report_type: str = "auto",
+           market_context: str | dict | None = None) -> RunResult:
     """Shared build step. Used by BOTH lanes — but only ever with a CSV already
     on disk. The keyed lane is responsible for producing that CSV from its live
-    pull first; the basic lane is handed one directly."""
+    pull first; the basic lane is handed one directly. Routes by declared
+    report_type (meta/financial/generic) exactly like the basic lane."""
     os.makedirs(out_dir, exist_ok=True)
-    try:
-        report = load_report(csv_path)
-    except ReportError as e:
-        log.error("report build failed for %s: %s", brand, e)
-        return RunResult(ok=False, client_id=client_id, brand=brand, error=str(e))
 
-    # AI insight is opt-in; generate_insight always returns *something* (AI or
-    # deterministic fallback), so the report never fails on this.
-    insight_text = generate_insight(report, ai_opted_in=ai_opted_in, client_id=client_id)
+    from engine.router import decide
+    from engine.profile import load_csv_rows
+    rows = load_csv_rows(csv_path)
+    headers = list(rows[0].keys()) if rows else []
+    rendered_as, _note = decide(report_type, headers)
 
-    html_path = os.path.join(out_dir, "report.html")
-    write_html(report, html_path, brand=brand, insight_text=insight_text)
+    if rendered_as == "financial":
+        from engine.financial_report import (load_fundamentals,
+                                             financial_metrics_payload,
+                                             write_financial_html)
+        from engine.insight import generate_financial_insight
+        try:
+            companies = load_fundamentals(rows)
+        except Exception as e:
+            log.error("report build failed for %s: %s", brand, e)
+            return RunResult(ok=False, client_id=client_id, brand=brand, error=str(e))
+        payload = financial_metrics_payload(companies, market_context=market_context)
+        insight_text = generate_financial_insight(payload, ai_opted_in=ai_opted_in,
+                                                  client_id=client_id)
+        html_path = os.path.join(out_dir, "report.html")
+        write_financial_html(rows, html_path, brand=brand, insight_text=insight_text)
+    else:
+        try:
+            report = load_report(csv_path)
+        except ReportError as e:
+            log.error("report build failed for %s: %s", brand, e)
+            return RunResult(ok=False, client_id=client_id, brand=brand, error=str(e))
+
+        # AI insight is opt-in; generate_insight always returns *something* (AI or
+        # deterministic fallback), so the report never fails on this.
+        insight_text = generate_insight(report, ai_opted_in=ai_opted_in, client_id=client_id)
+
+        html_path = os.path.join(out_dir, "report.html")
+        write_html(report, html_path, brand=brand, insight_text=insight_text)
 
     pdf_path = None
     try:
@@ -88,7 +113,8 @@ def _build(csv_path: str, brand: str, out_dir: str, client_id: str | None,
 # --------------------------------------------------------------------------- #
 def run_csv(csv_path: str, brand: str = "Your Brand",
             out_dir: str = "output", ai_insight: bool = False,
-            report_type: str = "auto") -> RunResult:
+            report_type: str = "auto",
+            market_context: str | dict | None = None) -> RunResult:
     """
     Basic walk-in job: CSV in, report out. This is the Fiverr $20 lane.
     Deliberately has no access to the credential store — a customer here can
@@ -119,6 +145,12 @@ def run_csv(csv_path: str, brand: str = "Your Brand",
         rendered_as, _ = decide(report_type, list(rows[0].keys()))
         if rendered_as == "meta":
             insight_text = generate_insight(load_report(csv_path), ai_opted_in=ai_insight)
+        elif rendered_as == "financial":
+            from engine.financial_report import load_fundamentals, financial_metrics_payload
+            from engine.insight import generate_financial_insight
+            payload = financial_metrics_payload(load_fundamentals(rows),
+                                                market_context=market_context)
+            insight_text = generate_financial_insight(payload, ai_opted_in=ai_insight)
         else:
             prof = profile_data(rows)
             insight_text = generate_generic_insight(
@@ -127,9 +159,6 @@ def run_csv(csv_path: str, brand: str = "Your Brand",
         routed = route_render(csv_path, out_dir, report_type=report_type,
                               brand=brand, branding=Branding(brand=brand),
                               insight_text=insight_text, file_stem="report")
-        # OFF-RAMP: basic lane has no client email, so outbox only
-        from engine.delivery import to_outbox
-        to_outbox(routed.pdf_path or routed.html_path, "walkin", brand=brand)
         return RunResult(ok=True, client_id=None, brand=brand,
                          html_path=routed.html_path, pdf_path=routed.pdf_path)
     except Exception as e:
@@ -187,7 +216,10 @@ def run_client(registry, client_id: str, out_root: str = "client_output",
         api_key = None   # don't keep the plaintext key around
 
     log.info("[keyed] building report for client '%s' (%s)", client_id, client.brand)
-    result = _build(csv_path, client.brand, out_dir, client_id=client_id)
+    rc = client.report_config or {}
+    result = _build(csv_path, client.brand, out_dir, client_id=client_id,
+                    report_type=rc.get("report_type", "auto"),
+                    market_context=rc.get("market_context"))
     if result.ok:
         registry.mark_run(client_id)
     return result

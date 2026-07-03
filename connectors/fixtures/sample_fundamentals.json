@@ -1,0 +1,166 @@
+{
+ "NVAX": [
+  {
+   "date": "2026-03-31",
+   "period": "Q1",
+   "calendarYear": "2026",
+   "revenue": 1842000000,
+   "grossProfit": 1215720000,
+   "operatingIncome": 497340000,
+   "netIncome": 386820000,
+   "eps": 1.42
+  },
+  {
+   "date": "2025-12-31",
+   "period": "Q4",
+   "calendarYear": "2025",
+   "revenue": 1733000000,
+   "grossProfit": 1126450000,
+   "operatingIncome": 450580000,
+   "netIncome": 346600000,
+   "eps": 1.28
+  },
+  {
+   "date": "2025-09-30",
+   "period": "Q3",
+   "calendarYear": "2025",
+   "revenue": 1601000000,
+   "grossProfit": 1024640000,
+   "operatingIncome": 400250000,
+   "netIncome": 304190000,
+   "eps": 1.13
+  },
+  {
+   "date": "2025-06-30",
+   "period": "Q2",
+   "calendarYear": "2025",
+   "revenue": 1512000000,
+   "grossProfit": 952560000,
+   "operatingIncome": 362880000,
+   "netIncome": 271160000,
+   "eps": 1.01
+  },
+  {
+   "date": "2025-03-31",
+   "period": "Q1",
+   "calendarYear": "2025",
+   "revenue": 1398000000,
+   "grossProfit": 867760000,
+   "operatingIncome": 321540000,
+   "netIncome": 237660000,
+   "eps": 0.89
+  },
+  {
+   "date": "2024-12-31",
+   "period": "Q4",
+   "calendarYear": "2024",
+   "revenue": 1355000000,
+   "grossProfit": 826550000,
+   "operatingIncome": 298100000,
+   "netIncome": 219510000,
+   "eps": 0.83
+  },
+  {
+   "date": "2024-09-30",
+   "period": "Q3",
+   "calendarYear": "2024",
+   "revenue": 1240000000,
+   "grossProfit": 744000000,
+   "operatingIncome": 260400000,
+   "netIncome": 186000000,
+   "eps": 0.71
+  },
+  {
+   "date": "2024-06-30",
+   "period": "Q2",
+   "calendarYear": "2024",
+   "revenue": 1168000000,
+   "grossProfit": 688120000,
+   "operatingIncome": 233600000,
+   "netIncome": 163520000,
+   "eps": 0.63
+  }
+ ],
+ "MERD": [
+  {
+   "date": "2026-03-31",
+   "period": "Q1",
+   "calendarYear": "2026",
+   "revenue": 902000000,
+   "grossProfit": 289542000,
+   "operatingIncome": 81180000,
+   "netIncome": 56826000,
+   "eps": 0.47
+  },
+  {
+   "date": "2025-12-31",
+   "period": "Q4",
+   "calendarYear": "2025",
+   "revenue": 947000000,
+   "grossProfit": 312510000,
+   "operatingIncome": 94700000,
+   "netIncome": 66290000,
+   "eps": 0.55
+  },
+  {
+   "date": "2025-09-30",
+   "period": "Q3",
+   "calendarYear": "2025",
+   "revenue": 889000000,
+   "grossProfit": 293370000,
+   "operatingIncome": 88900000,
+   "netIncome": 62230000,
+   "eps": 0.52
+  },
+  {
+   "date": "2025-06-30",
+   "period": "Q2",
+   "calendarYear": "2025",
+   "revenue": 915000000,
+   "grossProfit": 306525000,
+   "operatingIncome": 96075000,
+   "netIncome": 68625000,
+   "eps": 0.57
+  },
+  {
+   "date": "2025-03-31",
+   "period": "Q1",
+   "calendarYear": "2025",
+   "revenue": 896000000,
+   "grossProfit": 304640000,
+   "operatingIncome": 98560000,
+   "netIncome": 71680000,
+   "eps": 0.59
+  },
+  {
+   "date": "2024-12-31",
+   "period": "Q4",
+   "calendarYear": "2024",
+   "revenue": 931000000,
+   "grossProfit": 321195000,
+   "operatingIncome": 107065000,
+   "netIncome": 76342000,
+   "eps": 0.63
+  },
+  {
+   "date": "2024-09-30",
+   "period": "Q3",
+   "calendarYear": "2024",
+   "revenue": 874000000,
+   "grossProfit": 305900000,
+   "operatingIncome": 104880000,
+   "netIncome": 73416000,
+   "eps": 0.61
+  },
+  {
+   "date": "2024-06-30",
+   "period": "Q2",
+   "calendarYear": "2024",
+   "revenue": 861000000,
+   "grossProfit": 303072000,
+   "operatingIncome": 105042000,
+   "netIncome": 74046000,
+   "eps": 0.61
+  }
+ ]
+}

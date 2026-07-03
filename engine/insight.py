@@ -189,6 +189,12 @@ def generate_generic_insight(profile, plan: dict | None = None, *,
         text = "".join(b.text for b in msg.content if getattr(b, "type", "") == "text").strip()
         if not text:
             return deterministic_generic_summary(profile, plan)
+        from engine.verify import verify_text
+        v = verify_text(text, payload)
+        if not v.ok:
+            log.warning("generic insight discarded (%s) — deterministic "
+                        "summary shipped", v.why())
+            return deterministic_generic_summary(profile, plan)
         _bump_usage(client_id)
         return text
     except Exception as e:
@@ -256,8 +262,101 @@ def generate_insight(report, *, ai_opted_in: bool = False,
         text = "".join(b.text for b in msg.content if getattr(b, "type", "") == "text").strip()
         if not text:
             return deterministic_summary(report)
+        from engine.verify import verify_text
+        v = verify_text(text, payload)
+        if not v.ok:
+            log.warning("insight discarded (%s) — deterministic summary shipped", v.why())
+            return deterministic_summary(report)
         _bump_usage(client_id)
         return text
     except Exception as e:
         log.warning("AI insight failed (%s) — deterministic fallback", e)
         return deterministic_summary(report)
+
+
+# --------------------------------------------------------------------------- #
+# Financial insight — quarterly fundamentals read in market context
+# --------------------------------------------------------------------------- #
+def deterministic_financial_summary(payload: dict) -> str:
+    """Number-based read of the fundamentals payload, no AI needed."""
+    bits = []
+    for co in payload.get("companies", []):
+        L = co.get("latest", {})
+        rev = L.get("revenue")
+        rev_s = (f"${rev/1e9:,.2f}B" if rev and abs(rev) >= 1e9
+                 else f"${rev/1e6:,.1f}M" if rev else "—")
+        piece = f"{co['ticker']}: {L.get('period','')} {L.get('fiscal_date','')} revenue {rev_s}"
+        if co.get("revenue_yoy_pct") is not None:
+            piece += f" ({co['revenue_yoy_pct']:+.1f}% YoY)"
+        if L.get("net_margin_pct") is not None:
+            piece += f", net margin {L['net_margin_pct']:.1f}%"
+        if L.get("eps") is not None:
+            piece += f", EPS {L['eps']:.2f}"
+            if co.get("eps_yoy_pct") is not None:
+                piece += f" ({co['eps_yoy_pct']:+.1f}% YoY)"
+        bits.append(piece + ".")
+    return " ".join(bits) or "No reportable fundamentals."
+
+
+_FINANCIAL_SYSTEM = (
+    "You are an equity analyst writing for retail investors. Given quarterly "
+    "fundamentals for one or more companies as JSON (and, when present, a "
+    "market_context describing the current environment), write a 4-6 sentence "
+    "plain-English read per the fixed structure: what the latest quarter "
+    "showed, the revenue and margin trajectory across the quarters on file, "
+    "how that sits against the market context if one is provided, and what to "
+    "watch next quarter. Plain, confident prose. No preamble, no bullet "
+    "points, no advice to buy or sell. CRITICAL: use ONLY numbers that appear "
+    "in the JSON — never estimate, extrapolate, or introduce outside figures; "
+    "every number you write will be machine-checked against the source data."
+)
+
+
+def generate_financial_insight(payload: dict, *, ai_opted_in: bool = False,
+                               client_id: str | None = None,
+                               client_ceiling: int | None = None,
+                               client=None) -> str:
+    """AI narrative for a fundamentals payload if every gate passes AND the
+    output survives verification; else the deterministic summary. Never raises.
+    Gate 5 (verification) is what makes this lane deliverable to financial
+    clients: no unverified number ever ships."""
+    if not ai_opted_in:
+        return deterministic_financial_summary(payload)
+
+    global_calls, client_calls = _counts(client_id)
+    if global_calls >= GLOBAL_MONTHLY_CALL_CEILING:
+        return deterministic_financial_summary(payload)
+    if client_ceiling and client_calls >= client_ceiling:
+        return deterministic_financial_summary(payload)
+
+    api_key = os.environ.get(API_KEY_ENV)
+    if not api_key and client is None:
+        return deterministic_financial_summary(payload)
+
+    try:
+        import anthropic
+        c = client or anthropic.Anthropic(api_key=api_key)
+        msg = c.messages.create(
+            model=MODEL,
+            max_tokens=450,
+            system=_FINANCIAL_SYSTEM,
+            messages=[{"role": "user", "content": json.dumps(payload)}],
+        )
+        text = "".join(b.text for b in msg.content if getattr(b, "type", "") == "text").strip()
+        if not text:
+            return deterministic_financial_summary(payload)
+        # gate 5: verification — every number in the text must trace back to
+        # the payload, or the AI text is discarded for the deterministic one.
+        from engine.verify import verify_text
+        # STRICT: the financial payload carries its own margins and growth
+        # percentages, so every % claim must exist there verbatim.
+        v = verify_text(text, payload, allow_shares=False)
+        if not v.ok:
+            log.warning("financial insight discarded (%s) — deterministic "
+                        "summary shipped instead", v.why())
+            return deterministic_financial_summary(payload)
+        _bump_usage(client_id)
+        return text
+    except Exception as e:
+        log.warning("financial AI insight failed (%s) — deterministic fallback", e)
+        return deterministic_financial_summary(payload)
