@@ -206,8 +206,10 @@ def fetch_quarterly_fundamentals_av(api_key: str, report_config: dict,
             gp = _av_num(stmt.get("grossProfit"))
             oi = _av_num(stmt.get("operatingIncome"))
             ni = _av_num(stmt.get("netIncome"))
-            qtr = {3: "Q1", 6: "Q2", 9: "Q3", 12: "Q4"}.get(
-                int(d[5:7]) if len(d) >= 7 else 0, "")
+            # AV has no fiscal-period field; a calendar-derived "Q1" for a
+            # March quarter contradicts most fiscal calendars (Apple: fiscal
+            # Q2). Reports label by period end date; leave this blank.
+            qtr = ""
             rows.append({
                 "ticker": t, "fiscal_date": d, "period": qtr,
                 "calendar_year": d[:4],

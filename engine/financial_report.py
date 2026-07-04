@@ -187,7 +187,7 @@ def _delta_class(n) -> str:
 def _company_section(c: Company) -> str:
     L = c.latest
     kpis = "".join([
-        _kpi("Revenue", _money(L.revenue), f"{L.period} {L.fiscal_date}"),
+        _kpi("Revenue", _money(L.revenue), f"quarter ending {L.fiscal_date}"),
         _kpi("Net income", _money(L.net_income),
              f"margin {L.net_margin_pct:.1f}%" if L.net_margin_pct is not None else ""),
         _kpi("EPS", f"{L.eps:.2f}" if L.eps is not None else "—",
@@ -222,14 +222,14 @@ def _company_section(c: Company) -> str:
 
     body = "".join(
         f'<tr><td class="c-name"><span class="dot"></span>'
-        f'{_html.escape(q.period)} {_html.escape(q.fiscal_date)}</td>'
+        f'{_html.escape(q.fiscal_date)}</td>'
         f'<td class="num">{_money(q.revenue)}</td>'
         f'<td class="num">{_money(q.net_income)}</td>'
         f'<td class="num">{q.net_margin_pct:.1f}%</td>'
         f'<td class="num">{q.eps:.2f}</td></tr>'
         if q.net_margin_pct is not None and q.eps is not None else
         f'<tr><td class="c-name"><span class="dot"></span>'
-        f'{_html.escape(q.period)} {_html.escape(q.fiscal_date)}</td>'
+        f'{_html.escape(q.fiscal_date)}</td>'
         f'<td class="num">{_money(q.revenue)}</td>'
         f'<td class="num">{_money(q.net_income)}</td>'
         f'<td class="num">—</td><td class="num">—</td></tr>'
@@ -265,7 +265,7 @@ def build_financial_html(rows: list[dict], brand: str = "Your Report",
     if branding.phone:
         _cb.append(_html.escape(branding.phone))
     contact_html = f'<div class="contact">{" · ".join(_cb)}</div>' if _cb else ""
-    insight_html = (f'<div class="insight"><div class="insight-tag">Analysis</div>'
+    insight_html = (f'<div class="insight"><div class="insight-tag">Summary</div>'
                     f'<p>{_html.escape(insight_text)}</p></div>') if insight_text else ""
 
     latest = max(c.latest.fiscal_date for c in companies)

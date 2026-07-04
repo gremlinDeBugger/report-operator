@@ -285,7 +285,7 @@ def deterministic_financial_summary(payload: dict) -> str:
         rev = L.get("revenue")
         rev_s = (f"${rev/1e9:,.2f}B" if rev and abs(rev) >= 1e9
                  else f"${rev/1e6:,.1f}M" if rev else "—")
-        piece = f"{co['ticker']}: {L.get('period','')} {L.get('fiscal_date','')} revenue {rev_s}"
+        piece = f"{co['ticker']}: quarter ending {L.get('fiscal_date','')} revenue {rev_s}"
         if co.get("revenue_yoy_pct") is not None:
             piece += f" ({co['revenue_yoy_pct']:+.1f}% YoY)"
         if L.get("net_margin_pct") is not None:
