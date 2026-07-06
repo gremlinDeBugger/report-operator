@@ -61,7 +61,7 @@ header{border-bottom:1px solid var(--rule);background:var(--paper);
      padding:.85rem 1.5rem;border-radius:3px;border:1.5px solid var(--ledger);
      cursor:pointer;text-decoration:none;transition:transform .12s ease}
 .btn:hover{transform:translateY(-1px)}
-.btn-solid{background:var(--ledger);color:#fff}
+.btn-solid{background:var(--ledger);color:#000}
 .btn-ghost{background:transparent;color:var(--ledger);margin-left:.75rem}
 
 /* the signature: a report that prints itself */
@@ -124,20 +124,21 @@ td .up{color:var(--ledger)}
 @media(max-width:880px){.run .grid{grid-template-columns:1fr}}
 .run .about p{color:var(--paper-dim);font-size:.95rem;margin-bottom:1.1rem}
 .run .about b{color:var(--paper)}
-.keynote{border-left:3px solid var(--brass);padding:.75rem 1rem;background:#14291F;
-         font-size:.9rem;color:var(--paper-dim)}
-.keynote b{color:var(--paper)}
-form{background:#14291F;border:1px solid #22382F;border-radius:4px;padding:1.75rem}
+.keynote{border-left:3px solid var(--brass);padding:.75rem 1rem;background:#374151;
+         font-size:.9rem}
+.run .about p.keynote{color:#FFFFFF}
+.keynote b{color:#FFFFFF}
+form{background:#374151;border:1px solid #4B5563;border-radius:4px;padding:1.75rem}
 label{display:block;font-family:var(--mono);font-size:.72rem;letter-spacing:.12em;
-      text-transform:uppercase;color:var(--paper-dim);margin:1.1rem 0 .35rem}
+      text-transform:uppercase;color:#FFFFFF;margin:1.1rem 0 .35rem}
 label:first-child{margin-top:0}
 input,select{width:100%;padding:.7rem .8rem;font-family:var(--body);font-size:1rem;
-             background:var(--ink);border:1px solid #2E4A3C;border-radius:3px;
-             color:var(--paper)}
-input::placeholder{color:#4E6156}
+             background:#FFFFFF;border:1px solid #D1D5DB;border-radius:3px;
+             color:#000000}
+input::placeholder{color:#6B7280}
 .form-actions{margin-top:1.6rem;display:flex;gap:.75rem;flex-wrap:wrap}
 button{font-family:var(--body)}
-.btn-demo{background:transparent;color:var(--paper);border-color:#2E4A3C}
+.btn-demo{background:var(--ledger);color:#000;border-color:var(--ledger)}
 #status{margin-top:1.25rem;font-family:var(--mono);font-size:.82rem;min-height:1.4rem;
         color:var(--paper-dim);white-space:pre-line}
 #status.err{color:#E0A9A0}
