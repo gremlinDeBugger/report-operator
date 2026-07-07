@@ -145,6 +145,17 @@ button{font-family:var(--body)}
 #status.err{color:#E0A9A0}
 #status.ok{color:#9CCBB5}
 .hint{font-size:.78rem;color:#4E6156;font-family:var(--body);margin-top:.3rem}
+.csv-divider{display:flex;align-items:center;gap:1rem;margin:3rem 0 0;
+             font-family:var(--mono);font-size:.72rem;letter-spacing:.16em;
+             text-transform:uppercase;color:var(--paper-dim)}
+.csv-divider::before,.csv-divider::after{content:"";flex:1;height:1px;
+             background:var(--rule)}
+input[type=file]{padding:.55rem .6rem;font-family:var(--body);font-size:.92rem;
+             cursor:pointer}
+input[type=file]::file-selector-button{font-family:var(--body);font-weight:600;
+             margin-right:.8rem;padding:.4rem .8rem;border-radius:3px;
+             border:1.5px solid var(--ledger);background:var(--ledger);
+             color:#000;cursor:pointer}
 
 /* ---------- footer ---------- */
 footer{padding:2.5rem 0;border-top:1px solid var(--rule)}
@@ -303,6 +314,44 @@ footer a{color:var(--ledger)}
         <p id="status" role="status"></p>
       </form>
     </div>
+
+    <div class="csv-divider"><span>or bring your own data</span></div>
+
+    <div class="grid">
+      <div class="about">
+        <p><b>Already have the data?</b> Upload a CSV — a sales export, an ad
+        report, a survey dump — and get the same branded, verified report back.
+        No API key needed; <b>your file is the data.</b></p>
+        <p class="keynote"><b>How your file is handled:</b> it's processed in a
+        throwaway workspace that's wiped the moment your report is built. It is
+        never stored, never added to any account — there is no account system
+        here. <a href="https://github.com/gremlinDeBugger/report-operator">Read the source.</a></p>
+        <p>Not sure what type your data is? Leave it on <b>Auto-detect</b> — the
+        router reads your columns and picks the right template.</p>
+      </div>
+      <form id="csvform">
+        <label for="csvfile">Your CSV file</label>
+        <input id="csvfile" type="file" accept=".csv,text/csv" required>
+        <p class="hint">Up to 5 MB. Sales, catalog, ad-export, or survey data.</p>
+        <label for="csvtype">What is this data?</label>
+        <select id="csvtype">
+          <option value="auto">Auto-detect</option>
+          <option value="sales">Sales / transactions</option>
+          <option value="meta">Meta / Facebook Ads export</option>
+          <option value="catalog">Product catalog</option>
+          <option value="survey">Survey responses</option>
+          <option value="generic">Generic table</option>
+        </select>
+        <label for="csvemail">Email the PDF to (optional)</label>
+        <input id="csvemail" type="email" placeholder="you@firm.com" autocomplete="email">
+        <label for="csvbrand">Prepared for (optional)</label>
+        <input id="csvbrand" type="text" placeholder="Your firm's name">
+        <div class="form-actions">
+          <button class="btn btn-solid" type="submit">Generate report</button>
+        </div>
+        <p id="csvstatus" role="status"></p>
+      </form>
+    </div>
   </div>
 </section>
 
@@ -310,7 +359,7 @@ footer a{color:var(--ledger)}
   <div class="wrap">
     <span>GremlinHunter Reporting — built and run by Jared Jowett.</span>
     <span><a href="https://github.com/gremlinDeBugger/report-operator">GitHub</a> ·
-    <a href="https://www.upwork.com/freelancers/gremlinhunter">Hire on Upwork</a></span>
+    <a href="https://www.upwork.com/freelancers/~0179c990715a2dbfc6?viewMode=1">Hire on Upwork</a></span>
   </div>
 </footer>
 
@@ -407,6 +456,70 @@ demoBtn.addEventListener("click", ()=>{
   generate({provider:"demo",
             email: document.getElementById("email").value.trim(),
             brand: document.getElementById("brand").value.trim() || "Sample Client"});
+});
+
+// ---- CSV upload lane ----
+const csvForm = document.getElementById("csvform");
+const csvStatus = document.getElementById("csvstatus");
+const csvBtn = csvForm.querySelector('button[type="submit"]');
+let csvTick = null;
+
+function csvRunning(){
+  let i = 0;
+  csvStatus.className = "";
+  csvStatus.textContent = "RUNNING · " + STAGES[1] + " …";  // CSV starts at VERIFY
+  csvTick = setInterval(()=>{ i = Math.min(i+1, STAGES.length-1);
+    csvStatus.textContent = "RUNNING · " + STAGES[Math.max(1,i)] + " …"; }, 2000);
+}
+
+csvForm.addEventListener("submit", async (e)=>{
+  e.preventDefault();
+  const fileInput = document.getElementById("csvfile");
+  const file = fileInput.files[0];
+  if (!file){
+    csvStatus.className = "err";
+    csvStatus.textContent = "FAILED · choose a CSV file first.";
+    return;
+  }
+  if (file.size > 5*1024*1024){
+    csvStatus.className = "err";
+    csvStatus.textContent = "FAILED · that file is over the 5 MB limit.";
+    return;
+  }
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("report_type", document.getElementById("csvtype").value);
+  fd.append("email", document.getElementById("csvemail").value.trim());
+  fd.append("brand", document.getElementById("csvbrand").value.trim());
+
+  csvBtn.disabled = true;
+  csvRunning();
+  try{
+    const res = await fetch(API_BASE + "/api/generate-csv", {method:"POST", body: fd});
+    const j = await res.json();
+    if (!res.ok){
+      csvStatus.className = "err";
+      csvStatus.textContent = "FAILED · " + (j.detail?.[0]?.msg || j.detail || res.statusText);
+      return;
+    }
+    const bytes = Uint8Array.from(atob(j.report_b64), c=>c.charCodeAt(0));
+    const url = URL.createObjectURL(new Blob([bytes], {type:j.content_type}));
+    const a = document.createElement("a");
+    a.href = url; a.download = j.filename; a.click();
+    URL.revokeObjectURL(url);
+    csvStatus.className = "ok";
+    csvStatus.textContent = "DONE · report downloaded" +
+      (j.emailed ? " and emailed" :
+       (document.getElementById("csvemail").value.trim() && !j.email_configured
+         ? "\n(email delivery isn't switched on for this demo yet)" : ""));
+  }catch(err){
+    csvStatus.className = "err";
+    csvStatus.textContent = "FAILED · couldn't reach the report service. " +
+      "Free-tier hosting sleeps when idle — wait ~30s and try again.";
+  }finally{
+    clearInterval(csvTick); csvTick = null;
+    csvBtn.disabled = false;
+  }
 });
 </script>
 </body>

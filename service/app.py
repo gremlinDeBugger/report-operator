@@ -45,7 +45,7 @@ from collections import defaultdict, deque
 # service/ sits inside the repo; make the repo root importable
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, field_validator
 
@@ -54,6 +54,11 @@ from connectors.fundamentals import (fetch_quarterly_fundamentals,
                                      fixture_fetch_fn)
 from runner import run_csv
 from engine import delivery
+
+# Upload guard rails for the walk-in CSV lane.
+MAX_CSV_BYTES = int(os.environ.get("MAX_CSV_BYTES", str(5 * 1024 * 1024)))  # 5 MB
+ALLOWED_REPORT_TYPES = {"auto", "generic", "meta", "sales", "catalog",
+                        "survey", "financial"}
 
 log = logging.getLogger("service")
 logging.basicConfig(level=logging.INFO,
@@ -200,6 +205,82 @@ def generate(req: GenerateRequest, request: Request):
             emailed = delivery.send_email(
                 req.email,
                 subject=f"Quarterly fundamentals report — {brand}",
+                body="Your report is attached.\n\n— GremlinHunter Reporting",
+                attachments=[report_path],
+            )
+
+        with open(report_path, "rb") as f:
+            payload = base64.b64encode(f.read()).decode("ascii")
+
+        return {
+            "ok": True,
+            "filename": os.path.basename(report_path),
+            "content_type": ("application/pdf" if report_path.endswith(".pdf")
+                             else "text/html"),
+            "report_b64": payload,
+            "emailed": emailed,
+            "email_configured": delivery.email_configured(),
+        }
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+
+
+# --------------------------------------------------------------------------- #
+# CSV lane — the walk-in job. Customer uploads their own CSV, gets a report.
+# This exposes runner.run_csv (the "basic lane") over the web. No API key, no
+# provider fetch, no credential machinery — the file IS the data. Same temp-dir
+# discipline, same rate limit, same email off-ramp as /api/generate.
+# --------------------------------------------------------------------------- #
+@app.post("/api/generate-csv")
+async def generate_csv(request: Request,
+                       file: UploadFile = File(...),
+                       report_type: str = Form("auto"),
+                       email: str = Form(""),
+                       brand: str = Form("")):
+    ip = _client_ip(request)
+    if not _rate_ok(ip):
+        raise HTTPException(429, "Rate limit reached — this demo allows "
+                                 f"{RATE_LIMIT} reports per hour per address. "
+                                 "Try again later.")
+
+    # Validate inputs before touching disk.
+    name = (file.filename or "").strip()
+    if not name.lower().endswith(".csv"):
+        raise HTTPException(422, "Please upload a .csv file.")
+    rtype = report_type.strip().lower() or "auto"
+    if rtype not in ALLOWED_REPORT_TYPES:
+        raise HTTPException(422, "report_type must be one of: "
+                                 + ", ".join(sorted(ALLOWED_REPORT_TYPES)))
+    email = email.strip()
+    if email and not EMAIL_RE.match(email):
+        raise HTTPException(422, "that email address does not look valid")
+    brand = (brand.strip() or "Sample Client")[:60]
+
+    raw = await file.read()
+    if not raw:
+        raise HTTPException(422, "That file is empty.")
+    if len(raw) > MAX_CSV_BYTES:
+        raise HTTPException(413, f"File too large — {MAX_CSV_BYTES // (1024*1024)} MB max.")
+
+    work = tempfile.mkdtemp(prefix="csv_")
+    try:
+        csv_path = os.path.join(work, "upload.csv")
+        with open(csv_path, "wb") as f:
+            f.write(raw)
+
+        result = run_csv(csv_path, brand=brand, out_dir=work,
+                         report_type=rtype)
+        if not result.ok:
+            # run_csv returns its error string rather than raising; surface it.
+            raise HTTPException(422, f"Couldn't build a report from that CSV: "
+                                     f"{result.error}")
+
+        report_path = result.pdf_path or result.html_path
+        emailed = False
+        if email:
+            emailed = delivery.send_email(
+                email,
+                subject=f"Your report — {brand}",
                 body="Your report is attached.\n\n— GremlinHunter Reporting",
                 attachments=[report_path],
             )
