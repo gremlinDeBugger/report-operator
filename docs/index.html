@@ -156,6 +156,24 @@ input[type=file]::file-selector-button{font-family:var(--body);font-weight:600;
              margin-right:.8rem;padding:.4rem .8rem;border-radius:3px;
              border:1.5px solid var(--ledger);background:var(--ledger);
              color:#000;cursor:pointer}
+.csvgate{display:none;margin-top:2rem;padding:1.8rem;border:1px solid var(--rule);
+             border-radius:6px;background:#12201A}
+.gate-check{font-family:var(--mono);font-size:.82rem;letter-spacing:.08em;
+             color:#9CCBB5;text-transform:uppercase;margin-bottom:.5rem}
+.gate-meta{font-family:var(--mono);font-size:.9rem;color:var(--paper);margin:0 0 .6rem}
+.gate-analysis{font-family:var(--body);font-size:.9rem;color:var(--paper-dim);
+             line-height:1.5;margin:0 0 1.2rem;padding-left:.8rem;
+             border-left:2px solid var(--ledger)}
+.gate-preview{position:relative;border-radius:5px;overflow:hidden;margin-bottom:1.3rem}
+.gate-blur{filter:blur(6px);opacity:.5;padding:1.2rem;display:flex;flex-direction:column;gap:.7rem}
+.gate-bar{height:.9rem;background:linear-gradient(90deg,var(--ledger),transparent);border-radius:3px}
+.gate-bar.short{width:45%}.gate-bar.med{width:70%}
+.gate-lock{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+             text-align:center;font-family:var(--body);font-weight:600;font-size:.95rem;
+             color:var(--paper);padding:1rem}
+.gate-pitch{font-family:var(--body);font-size:.95rem;line-height:1.55;color:var(--paper);margin:0 0 1.2rem}
+.gate-cta{display:inline-block;text-decoration:none;font-size:1rem}
+.gate-sub{font-family:var(--mono);font-size:.76rem;color:var(--paper-dim);margin:.7rem 0 0}
 
 /* ---------- footer ---------- */
 footer{padding:2.5rem 0;border-top:1px solid var(--rule)}
@@ -352,6 +370,29 @@ footer a{color:var(--ledger)}
         <p id="csvstatus" role="status"></p>
       </form>
     </div>
+
+    <div id="csvgate" class="csvgate">
+      <div class="gate-check">✓ Your report is ready</div>
+      <p class="gate-meta" id="gate-meta"></p>
+      <p class="gate-analysis" id="gate-analysis"></p>
+      <div class="gate-preview">
+        <div class="gate-blur">
+          <div class="gate-bar"></div>
+          <div class="gate-bar short"></div>
+          <div class="gate-bar"></div>
+          <div class="gate-bar med"></div>
+          <div class="gate-bar short"></div>
+        </div>
+        <div class="gate-lock">Full branded report — verified, formatted, delivered</div>
+      </div>
+      <p class="gate-pitch">The engine ran on <b>your data</b> and the numbers
+        check out. Get the complete branded PDF — every figure verified, your
+        name on it, delivered to your inbox.</p>
+      <a class="btn btn-solid gate-cta" id="gate-cta"
+         href="https://www.upwork.com/services/product/development-it-turn-your-spreadsheet-into-a-branded-pdf-report-with-verified-data-2073831617457233180?ref=fl_profile"
+         target="_blank" rel="noopener">Get your full report on Upwork →</a>
+      <p class="gate-sub">Fixed price. One spreadsheet, one polished report.</p>
+    </div>
   </div>
 </section>
 
@@ -503,15 +544,24 @@ csvForm.addEventListener("submit", async (e)=>{
       return;
     }
     const bytes = Uint8Array.from(atob(j.report_b64), c=>c.charCodeAt(0));
-    const url = URL.createObjectURL(new Blob([bytes], {type:j.content_type}));
-    const a = document.createElement("a");
-    a.href = url; a.download = j.filename; a.click();
-    URL.revokeObjectURL(url);
-    csvStatus.className = "ok";
-    csvStatus.textContent = "DONE · report downloaded" +
-      (j.emailed ? " and emailed" :
-       (document.getElementById("csvemail").value.trim() && !j.email_configured
-         ? "\n(email delivery isn't switched on for this demo yet)" : ""));
+    const blob = new Blob([bytes], {type:j.content_type});
+
+    // Pull a preview out of the generated report to prove it worked on THEIR
+    // data — without handing over the finished deliverable. The full report
+    // is the paid product; this is the taste that drives the hire.
+    let recordLine = "";
+    try {
+      const text = await blob.text();
+      // report HTML carries "N records · M fields" and an analysis paragraph
+      const rec = text.match(/(\d[\d,]*)\s*records?\s*[·|]\s*(\d+)\s*fields?/i);
+      if (rec) recordLine = rec[1] + " records · " + rec[2] + " fields";
+      const an = text.match(/Dataset of[^<]{20,400}?\./i);
+      if (an) window.__previewAnalysis = an[0].trim();
+    } catch(e){ /* preview is best-effort */ }
+
+    clearInterval(csvTick); csvTick = null;
+    showCsvGate(recordLine);
+    return;
   }catch(err){
     csvStatus.className = "err";
     csvStatus.textContent = "FAILED · couldn't reach the report service. " +
@@ -521,6 +571,26 @@ csvForm.addEventListener("submit", async (e)=>{
     csvBtn.disabled = false;
   }
 });
+
+// The gate: prove it worked, withhold the deliverable, drive the hire.
+const UPWORK_URL = "https://www.upwork.com/services/product/development-it-turn-your-spreadsheet-into-a-branded-pdf-report-with-verified-data-2073831617457233180?ref=fl_profile";
+function showCsvGate(recordLine){
+  csvBtn.disabled = false;
+  csvStatus.className = "";
+  csvStatus.innerHTML = "";
+  const gate = document.getElementById("csvgate");
+  const meta = document.getElementById("gate-meta");
+  const analysis = document.getElementById("gate-analysis");
+  meta.textContent = recordLine || "Report generated from your data";
+  if (window.__previewAnalysis){
+    analysis.textContent = window.__previewAnalysis;
+    analysis.style.display = "block";
+  } else {
+    analysis.style.display = "none";
+  }
+  gate.style.display = "block";
+  gate.scrollIntoView({behavior:"smooth", block:"nearest"});
+}
 </script>
 </body>
 </html>
